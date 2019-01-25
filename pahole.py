@@ -97,7 +97,7 @@ It prints the type and displays comments showing where holes are."""
         if (ptype is None):
             raise gdb.GdbError('no type specified')
         if (cacheLines):
-            print ("Cache lines are printed every 64 bits and are a guidance only that are subject to natural alignment of the object.")
+            print ("Cache lines are printed every 64 bytes and are a guidance only that are subject to natural alignment of the object.")
         self.pahole (ptype, 0, '', cacheLines)
 
 Pahole()
