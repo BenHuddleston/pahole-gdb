@@ -28,7 +28,7 @@ It prints the type and displays comments showing where holes are."""
         super (Pahole, self).__init__ ("pahole", gdb.COMMAND_DATA,
                                        gdb.COMPLETE_SYMBOL)
 
-    def pahole (self, atype, level, name):
+    def pahole (self, atype, level, name, cacheLines):
         if name is None:
             name = ''
         tag = atype.tag
@@ -57,27 +57,49 @@ It prints the type and displays comments showing where holes are."""
                     fieldsize = 0 # empty struct
                 else:
                     fieldsize = 8 * ftype.sizeof # will get packing wrong for structs
-
+        
             print ('/* %3d %4d */' % (field.bitpos // 8, fieldsize // 8), end="")
+
             endpos = field.bitpos + fieldsize
 
-#            if ftype.code == gdb.TYPE_CODE_STRUCT:
-#                self.pahole (ftype, level + 1, field.name)
-#            else:
             print (' ' * (4 + 2 * level), end="")
             print ('%s %s' % (str (ftype), field.name))
+
+            if (cacheLines):
+                t = False   
+                i = fieldsize//8
+
+                while (((field.bitpos//8) // 64) != (((field.bitpos // 8) + (i)) // 64)):
+                    t = True
+                    print ("========================")
+                    if (i != 64):
+                        print ('/* %3d %4d */' % (((field.bitpos // 8 + (fieldsize//8 - i)) // 64 + 1) * 64, fieldsize // 8), end="")
+                        print (' ' * (4 + 2 * level), end="")
+                        print ('%s %s' % (str (ftype), field.name))
+                    i-=64
 
         print (' ' * (14 + 2 * level), end="")
         print ('} %s' % name)
 
     def invoke (self, arg, from_tty):
         argv = gdb.string_to_argv(arg)
-        if len(argv) > 2:
-            raise gdb.GdbError('pahole takes 1 arguments.')
-        stype = gdb.lookup_type (argv[0])
-        ptype = stype.strip_typedefs()
-        if ptype.code != gdb.TYPE_CODE_STRUCT and ptype.code != gdb.TYPE_CODE_UNION:
-            raise gdb.GdbError('%s is not a struct/union type: %s' % (arg, ptype.code))
-        self.pahole (ptype, 0, '')
+        ptype = None
+        cacheLines = False
+        for arg in argv:
+            if (arg[0] == '-'):
+                if (arg == '-c'):
+                    cacheLines = True
+                else:
+                    raise gdb.GdbError('Invalid arg ' + arg)
+            else:
+                stype = gdb.lookup_type (arg)
+                ptype = stype.strip_typedefs()
+                if ptype.code != gdb.TYPE_CODE_STRUCT and ptype.code != gdb.TYPE_CODE_UNION:
+                    raise gdb.GdbError('%s is not a struct/union type: %s' % (arg, ptype.code))
+        if (ptype is None):
+            raise gdb.GdbError('no type specified')
+        if (cacheLines):
+            print ("Cacahelines are printed every 64 bits and are a guidance only that are subject to natural alignment of the object.")
+        self.pahole (ptype, 0, '', cacheLines)
 
 Pahole()
