@@ -66,13 +66,11 @@ It prints the type and displays comments showing where holes are."""
             print ('%s %s' % (str (ftype), field.name))
 
             if (cacheLines):
-                t = False   
                 i = fieldsize//8
 
                 while (((field.bitpos//8) // 64) != (((field.bitpos // 8) + (i)) // 64)):
-                    t = True
                     print ("========================")
-                    if (i != 64):
+                    if (not ((field.bitpos//8 + i)%64 == 0 and i <= 64)):
                         print ('/* %3d %4d */' % (((field.bitpos // 8 + (fieldsize//8 - i)) // 64 + 1) * 64, fieldsize // 8), end="")
                         print (' ' * (4 + 2 * level), end="")
                         print ('%s %s' % (str (ftype), field.name))
